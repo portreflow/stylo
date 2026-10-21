@@ -6,11 +6,13 @@
 //!
 //! https://drafts.csswg.org/css-align/
 
+use std::fmt::{self, Write};
+
+use cssparser::Parser;
+use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, ToCss};
+
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
-use cssparser::Parser;
-use std::fmt::{self, Write};
-use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, ToCss};
 
 /// Constants shared by multiple CSS Box Alignment properties
 #[derive(
@@ -67,6 +69,10 @@ bitflags! {
         const SPACE_EVENLY = 16;
         /// `anchor-center`
         const ANCHOR_CENTER = 17;
+        /// 'flow-start'
+        const FLOW_START = 18;
+        /// 'flow-end'
+        const FLOW_END = 19;
 
         // Additional flags stored in the upper bits:
         /// 'legacy' (mutually exclusive w. SAFE & UNSAFE)
@@ -143,6 +149,8 @@ impl ToCss for AlignFlags {
             AlignFlags::SPACE_AROUND => "space-around",
             AlignFlags::SPACE_EVENLY => "space-evenly",
             AlignFlags::ANCHOR_CENTER => "anchor-center",
+            AlignFlags::FLOW_START => "flow-start",
+            AlignFlags::FLOW_END => "flow-end",
             _ => unreachable!(),
         })
     }
@@ -260,6 +268,8 @@ impl ContentDistribution {
         let content_position = try_match_ident_ignore_ascii_case! { input,
             "start" => AlignFlags::START,
             "end" => AlignFlags::END,
+            "flow-start" => AlignFlags::FLOW_START,
+            "flow-end" => AlignFlags::FLOW_END,
             "flex-start" => AlignFlags::FLEX_START,
             "flex-end" => AlignFlags::FLEX_END,
             "center" => AlignFlags::CENTER,
@@ -279,7 +289,15 @@ impl SpecifiedValueInfo for ContentDistribution {
         list_baseline_keywords(f); // block-axis only
         list_content_distribution_keywords(f);
         list_overflow_position_keywords(f);
-        f(&["start", "end", "flex-start", "flex-end", "center"]);
+        f(&[
+            "start",
+            "end",
+            "flow-start",
+            "flow-end",
+            "flex-start",
+            "flex-end",
+            "center",
+        ]);
         f(&["left", "right"]); // inline-axis only
     }
 }
@@ -381,16 +399,18 @@ impl SelfAlignment {
             AlignFlags::SELF_START => AlignFlags::SELF_END,
             AlignFlags::SELF_END => AlignFlags::SELF_START,
 
-            AlignFlags::AUTO
-            | AlignFlags::NORMAL
-            | AlignFlags::BASELINE
-            | AlignFlags::LAST_BASELINE
-            | AlignFlags::STRETCH
-            | AlignFlags::CENTER
-            | AlignFlags::SPACE_BETWEEN
-            | AlignFlags::SPACE_AROUND
-            | AlignFlags::SPACE_EVENLY
-            | AlignFlags::ANCHOR_CENTER => return self,
+            AlignFlags::AUTO |
+            AlignFlags::NORMAL |
+            AlignFlags::BASELINE |
+            AlignFlags::LAST_BASELINE |
+            AlignFlags::STRETCH |
+            AlignFlags::CENTER |
+            AlignFlags::FLOW_START |
+            AlignFlags::FLOW_END |
+            AlignFlags::SPACE_BETWEEN |
+            AlignFlags::SPACE_AROUND |
+            AlignFlags::SPACE_EVENLY |
+            AlignFlags::ANCHOR_CENTER => return self,
             _ => {
                 debug_assert!(false, "Unexpected alignment enumeration value");
                 return self;
@@ -640,6 +660,8 @@ fn parse_self_position(
     Ok(try_match_ident_ignore_ascii_case! { input,
         "start" => AlignFlags::START,
         "end" => AlignFlags::END,
+        "flow-start" => AlignFlags::FLOW_START,
+        "flow-end" => AlignFlags::FLOW_END,
         "flex-start" => AlignFlags::FLEX_START,
         "flex-end" => AlignFlags::FLEX_END,
         "center" => AlignFlags::CENTER,
@@ -660,6 +682,8 @@ fn list_self_position_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
     f(&[
         "start",
         "end",
+        "flow-start",
+        "flow-end",
         "flex-start",
         "flex-end",
         "center",
