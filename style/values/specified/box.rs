@@ -876,6 +876,10 @@ pub enum ScrollSnapAxis {
     Block,
     Inline,
     Both,
+    /// Both axes snap together to a single 2D point; snap areas that only
+    /// contribute to one axis are ignored.
+    /// <https://drafts.csswg.org/css-scroll-snap-1/#scroll-snap-type>
+    Pair,
 }
 
 /// https://drafts.csswg.org/css-scroll-snap-1/#snap-strictness
@@ -937,10 +941,23 @@ impl ScrollSnapType {
             strictness: ScrollSnapStrictness::None,
         }
     }
+
+    /// The axis (or axis pair) that the scroll container snaps on.
+    #[inline]
+    pub fn axis(&self) -> ScrollSnapAxis {
+        self.axis
+    }
+
+    /// The snap strictness: `mandatory`, `proximity`, or `None` for
+    /// `scroll-snap-type: none`.
+    #[inline]
+    pub fn strictness(&self) -> ScrollSnapStrictness {
+        self.strictness
+    }
 }
 
 impl Parse for ScrollSnapType {
-    /// none | [ x | y | block | inline | both ] [ mandatory | proximity ]?
+    /// none | [ x | y | block | inline | both | pair ] [ mandatory | proximity ]?
     fn parse(_context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if input
             .try_parse(|input| input.expect_ident_matching("none"))
@@ -1030,6 +1047,18 @@ impl ScrollSnapAlign {
             block: ScrollSnapAlignKeyword::None,
             inline: ScrollSnapAlignKeyword::None,
         }
+    }
+
+    /// The alignment of this box's snap area in its block axis.
+    #[inline]
+    pub fn block(&self) -> ScrollSnapAlignKeyword {
+        self.block
+    }
+
+    /// The alignment of this box's snap area in its inline axis.
+    #[inline]
+    pub fn inline(&self) -> ScrollSnapAlignKeyword {
+        self.inline
     }
 }
 
