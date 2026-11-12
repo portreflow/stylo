@@ -1048,6 +1048,18 @@ impl ScrollSnapAlign {
             inline: ScrollSnapAlignKeyword::None,
         }
     }
+
+    /// The alignment of this box's snap area in its block axis.
+    #[inline]
+    pub fn block(&self) -> ScrollSnapAlignKeyword {
+        self.block
+    }
+
+    /// The alignment of this box's snap area in its inline axis.
+    #[inline]
+    pub fn inline(&self) -> ScrollSnapAlignKeyword {
+        self.inline
+    }
 }
 
 impl Parse for ScrollSnapAlign {
