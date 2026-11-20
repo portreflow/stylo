@@ -3941,7 +3941,6 @@ keyword = { values = ["show", "hide"] }
 
 [hyphens]
 struct = "inherited_text"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-text/#propdef-hyphens"
 animation_type = "discrete"
 affects = "layout"
