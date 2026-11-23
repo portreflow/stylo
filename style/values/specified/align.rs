@@ -8,6 +8,7 @@
 
 use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
+use crate::values::computed::{Context, ToComputedValue};
 use cssparser::Parser;
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, KeywordsCollectFn, ParseError, SpecifiedValueInfo, ToCss};
@@ -67,6 +68,10 @@ bitflags! {
         const SPACE_EVENLY = 16;
         /// `anchor-center`
         const ANCHOR_CENTER = 17;
+        /// 'flow-start'
+        const FLOW_START = 18;
+        /// 'flow-end'
+        const FLOW_END = 19;
 
         // Additional flags stored in the upper bits:
         /// 'legacy' (mutually exclusive w. SAFE & UNSAFE)
@@ -99,6 +104,20 @@ impl AlignFlags {
     #[inline]
     pub fn flags(&self) -> Self {
         *self & AlignFlags::FLAG_BITS
+    }
+
+    /// Returns the computed value, canonicalizing the legacy `flex-start` and
+    /// `flex-end` aliases to `flow-start` and `flow-end`.
+    ///
+    /// <https://drafts.csswg.org/css-align/#valdef-self-position-flex-start>
+    #[inline]
+    pub fn canonicalize_computed(self) -> Self {
+        let value = match self.value() {
+            AlignFlags::FLEX_START => AlignFlags::FLOW_START,
+            AlignFlags::FLEX_END => AlignFlags::FLOW_END,
+            _ => return self,
+        };
+        self.with_value(value)
     }
 }
 
@@ -143,6 +162,8 @@ impl ToCss for AlignFlags {
             AlignFlags::SPACE_AROUND => "space-around",
             AlignFlags::SPACE_EVENLY => "space-evenly",
             AlignFlags::ANCHOR_CENTER => "anchor-center",
+            AlignFlags::FLOW_START => "flow-start",
+            AlignFlags::FLOW_END => "flow-end",
             _ => unreachable!(),
         })
     }
@@ -171,7 +192,6 @@ pub enum AxisDirection {
     MallocSizeOf,
     PartialEq,
     Serialize,
-    ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
@@ -183,6 +203,22 @@ pub struct ContentDistribution {
     primary: AlignFlags,
     // FIXME(https://github.com/w3c/csswg-drafts/issues/1002): This will need to
     // accept fallback alignment, eventually.
+}
+
+impl ToComputedValue for ContentDistribution {
+    type ComputedValue = Self;
+
+    #[inline]
+    fn to_computed_value(&self, _context: &Context) -> Self {
+        Self {
+            primary: self.primary.canonicalize_computed(),
+        }
+    }
+
+    #[inline]
+    fn from_computed_value(from: &Self) -> Self {
+        *from
+    }
 }
 
 impl ContentDistribution {
@@ -262,6 +298,8 @@ impl ContentDistribution {
             "end" => AlignFlags::END,
             "flex-start" => AlignFlags::FLEX_START,
             "flex-end" => AlignFlags::FLEX_END,
+            "flow-start" => AlignFlags::FLOW_START,
+            "flow-end" => AlignFlags::FLOW_END,
             "center" => AlignFlags::CENTER,
             "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
             "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
@@ -279,7 +317,7 @@ impl SpecifiedValueInfo for ContentDistribution {
         list_baseline_keywords(f); // block-axis only
         list_content_distribution_keywords(f);
         list_overflow_position_keywords(f);
-        f(&["start", "end", "flex-start", "flex-end", "center"]);
+        f(&["start", "end", "flex-start", "flex-end", "flow-start", "flow-end", "center"]);
         f(&["left", "right"]); // inline-axis only
     }
 }
@@ -298,7 +336,6 @@ impl SpecifiedValueInfo for ContentDistribution {
     MallocSizeOf,
     PartialEq,
     Serialize,
-    ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
@@ -307,6 +344,20 @@ impl SpecifiedValueInfo for ContentDistribution {
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct SelfAlignment(pub AlignFlags);
+
+impl ToComputedValue for SelfAlignment {
+    type ComputedValue = Self;
+
+    #[inline]
+    fn to_computed_value(&self, _context: &Context) -> Self {
+        Self(self.0.canonicalize_computed())
+    }
+
+    #[inline]
+    fn from_computed_value(from: &Self) -> Self {
+        *from
+    }
+}
 
 impl SelfAlignment {
     /// The initial value 'auto'
@@ -376,6 +427,8 @@ impl SelfAlignment {
             AlignFlags::END => AlignFlags::START,
             AlignFlags::FLEX_START => AlignFlags::FLEX_END,
             AlignFlags::FLEX_END => AlignFlags::FLEX_START,
+            AlignFlags::FLOW_START => AlignFlags::FLOW_END,
+            AlignFlags::FLOW_END => AlignFlags::FLOW_START,
             AlignFlags::LEFT => AlignFlags::RIGHT,
             AlignFlags::RIGHT => AlignFlags::LEFT,
             AlignFlags::SELF_START => AlignFlags::SELF_END,
@@ -428,7 +481,6 @@ impl SpecifiedValueInfo for SelfAlignment {
     MallocSizeOf,
     PartialEq,
     Serialize,
-    ToComputedValue,
     ToCss,
     ToResolvedValue,
     ToShmem,
@@ -437,6 +489,20 @@ impl SpecifiedValueInfo for SelfAlignment {
 #[repr(C)]
 #[typed(todo_derive_fields)]
 pub struct ItemPlacement(pub AlignFlags);
+
+impl ToComputedValue for ItemPlacement {
+    type ComputedValue = Self;
+
+    #[inline]
+    fn to_computed_value(&self, _context: &Context) -> Self {
+        Self(self.0.canonicalize_computed())
+    }
+
+    #[inline]
+    fn from_computed_value(from: &Self) -> Self {
+        *from
+    }
+}
 
 impl ItemPlacement {
     /// The value 'normal'
@@ -642,14 +708,15 @@ fn parse_self_position(
         "end" => AlignFlags::END,
         "flex-start" => AlignFlags::FLEX_START,
         "flex-end" => AlignFlags::FLEX_END,
+        "flow-start" => AlignFlags::FLOW_START,
+        "flow-end" => AlignFlags::FLOW_END,
         "center" => AlignFlags::CENTER,
         "self-start" => AlignFlags::SELF_START,
         "self-end" => AlignFlags::SELF_END,
         "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
         "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
         "anchor-center"
-            if matches!(allow_anchor_center, AllowAnchorCenter::Yes)
-                && crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) =>
+            if matches!(allow_anchor_center, AllowAnchorCenter::Yes) =>
         {
             AlignFlags::ANCHOR_CENTER
         },
@@ -662,14 +729,14 @@ fn list_self_position_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
         "end",
         "flex-start",
         "flex-end",
+        "flow-start",
+        "flow-end",
         "center",
         "self-start",
         "self-end",
     ]);
 
-    if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
-        f(&["anchor-center"]);
-    }
+    f(&["anchor-center"]);
 
     if axis == AxisDirection::Inline {
         f(&["left", "right"]);
