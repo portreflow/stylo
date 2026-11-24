@@ -67,6 +67,10 @@ bitflags! {
         const SPACE_EVENLY = 16;
         /// `anchor-center`
         const ANCHOR_CENTER = 17;
+        /// 'flow-start'
+        const FLOW_START = 18;
+        /// 'flow-end'
+        const FLOW_END = 19;
 
         // Additional flags stored in the upper bits:
         /// 'legacy' (mutually exclusive w. SAFE & UNSAFE)
@@ -143,6 +147,8 @@ impl ToCss for AlignFlags {
             AlignFlags::SPACE_AROUND => "space-around",
             AlignFlags::SPACE_EVENLY => "space-evenly",
             AlignFlags::ANCHOR_CENTER => "anchor-center",
+            AlignFlags::FLOW_START => "flow-start",
+            AlignFlags::FLOW_END => "flow-end",
             _ => unreachable!(),
         })
     }
@@ -380,6 +386,8 @@ impl SelfAlignment {
             AlignFlags::RIGHT => AlignFlags::LEFT,
             AlignFlags::SELF_START => AlignFlags::SELF_END,
             AlignFlags::SELF_END => AlignFlags::SELF_START,
+            AlignFlags::FLOW_START => AlignFlags::FLOW_END,
+            AlignFlags::FLOW_END => AlignFlags::FLOW_START,
 
             AlignFlags::AUTO
             | AlignFlags::NORMAL
@@ -645,6 +653,8 @@ fn parse_self_position(
         "center" => AlignFlags::CENTER,
         "self-start" => AlignFlags::SELF_START,
         "self-end" => AlignFlags::SELF_END,
+        "flow-start" => AlignFlags::FLOW_START,
+        "flow-end" => AlignFlags::FLOW_END,
         "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
         "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
         "anchor-center"
@@ -665,6 +675,8 @@ fn list_self_position_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
         "center",
         "self-start",
         "self-end",
+        "flow-start",
+        "flow-end",
     ]);
 
     if crate::pref!("layout.css.anchor-positioning.enabled", gecko = true) {
