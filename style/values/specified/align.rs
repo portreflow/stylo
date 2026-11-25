@@ -433,6 +433,8 @@ impl SelfAlignment {
             AlignFlags::RIGHT => AlignFlags::LEFT,
             AlignFlags::SELF_START => AlignFlags::SELF_END,
             AlignFlags::SELF_END => AlignFlags::SELF_START,
+            AlignFlags::FLOW_START => AlignFlags::FLOW_END,
+            AlignFlags::FLOW_END => AlignFlags::FLOW_START,
 
             AlignFlags::AUTO
             | AlignFlags::NORMAL
@@ -713,6 +715,8 @@ fn parse_self_position(
         "center" => AlignFlags::CENTER,
         "self-start" => AlignFlags::SELF_START,
         "self-end" => AlignFlags::SELF_END,
+        "flow-start" => AlignFlags::FLOW_START,
+        "flow-end" => AlignFlags::FLOW_END,
         "left" if axis == AxisDirection::Inline => AlignFlags::LEFT,
         "right" if axis == AxisDirection::Inline => AlignFlags::RIGHT,
         "anchor-center"
@@ -734,6 +738,8 @@ fn list_self_position_keywords(f: KeywordsCollectFn, axis: AxisDirection) {
         "center",
         "self-start",
         "self-end",
+        "flow-start",
+        "flow-end",
     ]);
 
     f(&["anchor-center"]);
