@@ -414,10 +414,12 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     }
 
     /// CSS overflow-x and overflow-y require some fixup as well in some cases.
-    /// https://drafts.csswg.org/css-overflow-3/#overflow-properties
-    /// "Computed value: as specified, except with `visible`/`clip` computing to
-    /// `auto`/`hidden` (respectively) if one of `overflow-x` or `overflow-y` is
-    /// neither `visible` nor `clip`."
+    /// https://drafts.csswg.org/css-overflow/#overflow-properties
+    /// "Computed value: as specified, except with `visible` computing to `auto` if one of
+    /// `overflow-x` or `overflow-y` is neither `visible` nor `clip`."
+    ///
+    /// `clip` is deliberately not converted to `hidden`: a box that is scrollable on one axis
+    /// and `clip` on the other is a single-axis scroll container.
     fn adjust_for_overflow(&mut self) {
         let overflow_x = self.style.get_box().clone_overflow_x();
         let overflow_y = self.style.get_box().clone_overflow_y();

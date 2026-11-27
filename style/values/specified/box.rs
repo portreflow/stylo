@@ -2177,14 +2177,16 @@ impl Overflow {
     pub fn is_scrollable(&self) -> bool {
         matches!(*self, Self::Hidden | Self::Scroll | Self::Auto)
     }
-    /// Convert the value to a scrollable value if it's not already scrollable.
-    /// This maps `visible` to `auto` and `clip` to `hidden`.
+    /// Map this value to its computed value when the other axis is scrollable, as specified
+    /// by <https://drafts.csswg.org/css-overflow/#overflow-properties>: only `visible`
+    /// computes to `auto`. `clip` is preserved, because a box that is scrollable on one axis
+    /// and `clip` on the other is a single-axis scroll container, not a box whose clipped
+    /// axis becomes scrollable.
     #[inline]
     pub fn to_scrollable(&self) -> Self {
         match *self {
-            Self::Hidden | Self::Scroll | Self::Auto => *self,
             Self::Visible => Self::Auto,
-            Self::Clip => Self::Hidden,
+            value => value,
         }
     }
 }
