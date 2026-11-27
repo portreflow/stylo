@@ -463,6 +463,15 @@ impl Device {
         }
     }
 
+    /// Returns the color of the [`SystemColor::Canvas`] system color for the given
+    /// [`ColorSchemeFlags`].
+    ///
+    /// Layout uses this to pre-compose partially transparent colors over the canvas, as
+    /// required by e.g. `accent-color`.
+    pub fn canvas_color(&self, color_scheme_flags: ColorSchemeFlags) -> AbsoluteColor {
+        self.system_color(SystemColor::Canvas, color_scheme_flags)
+    }
+
     /// Returns the current effective text zoom.
     #[inline]
     pub(super) fn text_zoom(&self) -> f32 {
